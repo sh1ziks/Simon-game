@@ -9,41 +9,67 @@ void add(std::vector<int>& lit, int& count);
 
 int main()
 {
+	//Настройки окна
 	ContextSettings settings;
 	settings.antialiasingLevel = 6;
+	
+	//Иконка окна
+	Image icon;
+	icon.loadFromFile("Image\\GameLogo.png");
 
-	RenderWindow window(VideoMode(1920, 1080), "Simon", Style::Close, settings);
+	RenderWindow window(VideoMode(1920, 1080), "Simon game", Style::Close, settings);
+	window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
 
 	Clock clock;
 
+	//Размер окна
 	int sizeX = window.getSize().x;
 	int sizeY = window.getSize().y;
 	Vector2f coord(window.getSize());
 
 	srand(time(0));
 
+	//Переменные состояния
+	bool startPlay = true;
 	bool play = false;
 	bool light = false;
 	bool lose = false;
+
+	float lightTime = 0.25;
 	float lightTimer = 0;
 	float allTimer = 0;
+
 	int count = 0;
 	int score = 0;
 
+	//Порядок загорания ламп
 	std::vector<int> lit;
 	lit.push_back((rand() % 4) + 1);
 	add(lit, count);
 	add(lit, count);
 	std::vector<int>::iterator it = lit.begin();
 
+	//Создание кубов
 	Cube cube1(sizeX, sizeY);
 	Cube cube2(sizeX, sizeY);
 	Cube cube3(sizeX, sizeY);
 	Cube cube4(sizeX, sizeY);
 
+	//Кнопки уровня сложности
+	RectangleShape easyButt(Vector2f(300, 100));
+	easyButt.setOrigin(easyButt.getSize().x / 2, easyButt.getSize().y / 2);
+	easyButt.setFillColor(Color(255, 255, 255));
+	easyButt.setPosition(coord.x - 960, coord.y - 800);
+
+	RectangleShape normalButt(Vector2f(300, 100));
+	normalButt.setOrigin(normalButt.getSize().x / 2, normalButt.getSize().y / 2);
+	normalButt.setFillColor(Color(255, 255, 255));
+	normalButt.setPosition(coord.x - 960, coord.y - 600);
+
 	Font font;
 	font.loadFromFile("Font\\Tektur.ttf");
 
+	//Все тексты в игре
 	Text guideText("\t\tSimon game\n1 - Start\tEscape - Exit", font, 50);
 	guideText.setFillColor(Color(255, 255, 255));
 	guideText.setPosition(coord.x - 1225, coord.y - 1070);
@@ -63,6 +89,27 @@ int main()
 	Text restartText("Press E for restart", font, 40);
 	restartText.setFillColor(Color(255, 255, 255));
 	restartText.setPosition(coord.x - 1150, coord.y - 500);
+
+	Text difficultyText("Choose difficulty", font, 70);
+	difficultyText.setOrigin(difficultyText.getGlobalBounds().width / 2, difficultyText.getGlobalBounds().height / 2);
+	difficultyText.setFillColor(Color(255, 255, 255, 200));
+	difficultyText.setPosition(coord.x - 960, coord.y - 1000);
+
+	Text easyText("Easy", font, 30);
+	Text normalText("Normal", font, 30);
+	Text hardText("Hard", font, 30);
+
+	FloatRect easyBounds = easyText.getGlobalBounds();
+	FloatRect normalBounds = normalText.getGlobalBounds();
+	FloatRect hardBounds = hardText.getGlobalBounds();
+
+	easyText.setOrigin(easyBounds.width / 2, easyBounds.height / 2);
+	easyText.setPosition(easyButt.getPosition());
+	easyText.setFillColor(Color(0, 0, 0));
+
+	normalText.setOrigin(normalBounds.width / 2, normalBounds.height / 2);
+	normalText.setPosition(normalButt.getPosition());
+	normalText.setFillColor(Color(0, 0, 0));
 
 	while (window.isOpen())
 	{
@@ -89,7 +136,7 @@ int main()
 
 				if (event.key.code == Keyboard::Num1 || event.key.code == Keyboard::Numpad1)
 				{
-					if (!play && !lose)
+					if (!play && !lose && !startPlay)
 						light = true;
 				}
 
@@ -116,6 +163,21 @@ int main()
 			{
 				if (event.key.code == Mouse::Left)
 				{
+					if (startPlay)
+					{
+						if (easyButt.getGlobalBounds().contains(pos.x, pos.y))
+						{
+							lightTime = 0.5;
+							startPlay = false;
+						}
+
+						else if (normalButt.getGlobalBounds().contains(pos.x, pos.y))
+						{
+							lightTime = 0.25;
+							startPlay = false;
+						}
+					}
+
 					if (play)
 					{
 						switch (*it)
@@ -196,8 +258,7 @@ int main()
 			}
 		}
 
-
-		if (lightTimer > 0.5 && light)
+		if (lightTimer > lightTime && light)
 		{
 			cube1.shape.setFillColor(Color(255, 0, 0));
 			cube2.shape.setFillColor(Color(0, 255, 0));
@@ -249,7 +310,16 @@ int main()
 		timeText.setString("Time: " + timeString.str());
 
 		window.clear();
-		if (lose)
+		if (startPlay)
+		{
+			window.draw(difficultyText);
+			window.draw(easyButt);
+			window.draw(easyText);
+			window.draw(normalButt);
+			window.draw(normalText);
+		}
+
+		else if (lose)
 		{
 			window.draw(loseText);
 			window.draw(scoreText);
